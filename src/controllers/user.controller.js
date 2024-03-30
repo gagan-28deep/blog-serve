@@ -232,5 +232,9 @@ export const getAllUsers = asyncHandler(async (req, res) => {
 });
 
 
-// Delete
+// Generate Refresh Token
+
+// Delete a User?
+
+// Forgot Password
 

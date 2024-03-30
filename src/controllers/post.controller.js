@@ -7,7 +7,7 @@ import mongoose from "mongoose";
 
 // Create Post
 export const createPost = asyncHandler(async (req, res) => {
-  const { title, description, categories, username } = req.body;
+  const { title, description, categories } = req.body;
 
   const postImageLocalPath = req?.file?.path;
   const postImage = await uploadOnCloudinary(postImageLocalPath);
@@ -16,7 +16,7 @@ export const createPost = asyncHandler(async (req, res) => {
     title,
     description,
     categories,
-    username,
+    username: new mongoose.Types.ObjectId(req?.user?._id),
     postImage: postImage?.url || "",
   });
 
@@ -64,24 +64,24 @@ export const getPostById = asyncHandler(async (req, res) => {
         localField: "_id", // Lookup comments based on post's _id
         foreignField: "commentOnPost",
         as: "comments",
-        pipeline : [
+        pipeline: [
           {
-            $lookup : {
-              from :  "users",
-              localField : "commentBy",
-              foreignField : "_id",
-              as : "commentBy"
-            }
+            $lookup: {
+              from: "users",
+              localField: "commentBy",
+              foreignField: "_id",
+              as: "commentBy",
+            },
           },
           {
-            $project : {
-              commentText : 1,
-              "commentBy.name" : 1
-            }
-          }
-        ]
+            $project: {
+              commentText: 1,
+              "commentBy.name": 1,
+            },
+          },
+        ],
       },
-    }
+    },
   ]);
   if (post.length === 0) {
     throw new ApiError(400, "No Post Found");
@@ -93,10 +93,30 @@ export const getPostById = asyncHandler(async (req, res) => {
 
 // Get all posts
 export const getAllPosts = asyncHandler(async (req, res) => {
-  const allPosts = await Post.find();
+  const allPosts = await Post.aggregate([
+    {
+      $lookup: {
+        from: "users",
+        localField: "username",
+        foreignField: "_id",
+        as: "owner",
+        pipeline: [
+          {
+            $project: {
+              name: 1,
+              profileImage: 1,
+            },
+          },
+        ],
+      },
+    },
+  ]);
+  if (!allPosts || allPosts?.length === 0) {
+    throw new ApiError(400, "No Posts found");
+  }
   return res
     .status(200)
-    .json(new ApiResponse(200, allPosts, "All Posts fetched Successfully"));
+    .json(new ApiResponse(200, allPosts, "All posts Fetched Successfully"));
 });
 
 // Delete a post
@@ -168,7 +188,7 @@ export const updatePost = asyncHandler(async (req, res) => {
   }
   const updatedPost = await Post.findByIdAndUpdate(
     id,
-    { $set:  updateFields  },
+    { $set: updateFields },
     { new: true }
   );
   return res

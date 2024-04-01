@@ -32,19 +32,43 @@ const generateAccessRefreshToken = async (userId) => {
 export const signUp = asyncHandler(async (req, res) => {
   const { name, email, username, password } = req.body;
   if ([name, email, username, password].some((field) => field?.trim() === "")) {
-    throw new ApiError(400, "All Fields Are Required");
+    // throw new ApiError(400, "All Fields Are Required");
+    const error = new ApiError(400, "All Fields Are Required");
+    return res.status(error?.statusCode).json({
+      statusCode: error.statusCode,
+      success: false,
+      message: error.message,
+      errors: error.errors,
+    });
   }
   if (!name || !email || !username || !password) {
-    throw new ApiError(400, "All Fields Are Required");
+    // throw new ApiError(400, "All Fields Are Required");
+    const error = new ApiError(400, "All Fields Are Required");
+    return res.status(error?.statusCode).json({
+      statusCode: error.statusCode,
+      success: false,
+      message: error.message,
+      errors: error.errors,
+    });
   }
   const existingUser = await User.findOne({
     $or: [{ username }, { email }],
   });
   if (existingUser) {
-    throw new ApiError(
+    const error = new ApiError(
       400,
       "User with same username or email is already presnet"
     );
+    return res.status(error?.statusCode).json({
+      statusCode: error.statusCode,
+      success: false,
+      message: error.message,
+      errors: error.errors,
+    });
+    // throw new ApiError(
+    //   400,
+    //   "User with same username or email is already presnet"
+    // );
   }
   let profileImageLocalPath;
   if (req.file && req?.file?.path) {
@@ -63,7 +87,17 @@ export const signUp = asyncHandler(async (req, res) => {
     "-password -refreshToken"
   );
   if (!createdUser) {
-    throw new ApiError(500, "Something went wrong while creating a user");
+    // throw new ApiError(500, "Something went wrong while creating a user");
+    const error = new ApiError(
+      500,
+      "Something went wrong while creating a user"
+    );
+    return res.status(error?.statusCode).json({
+      statusCode: error.statusCode,
+      success: false,
+      message: error.message,
+      errors: error.errors,
+    });
   }
   return res
     .status(200)
@@ -77,18 +111,25 @@ export const login = asyncHandler(async (req, res) => {
     $or: [{ email: username }, { username }],
   });
   if (!user) {
-    throw new ApiError(404, "User does not exist");
-    // const error = new ApiError(404, "User does not exist");
-    // return res.status(error.statusCode).json({
-    //   statusCode : error.statusCode,
-    //   success: false,
-    //   message: error.message,
-    //   errors: error.errors,
-    // });
+    // throw new ApiError(404, "User does not exist");
+    const error = new ApiError(404, "User does not exist");
+    return res.status(error.statusCode).json({
+      statusCode: error.statusCode,
+      success: false,
+      message: error.message,
+      errors: error.errors,
+    });
   }
   const isPasswordCorrect = await user?.isPasswordSame(password);
   if (!isPasswordCorrect) {
-    throw new ApiError(404, "Credentials are not correct");
+    // throw new ApiError(404, "Credentials are not correct");
+    const error = new ApiError(404, "Credentials are not correct");
+    return res.status(error.statusCode).json({
+      statusCode: error.statusCode,
+      success: false,
+      message: error.message,
+      errors: error.errors,
+    });
   }
   const { accessToken, refreshToken } = await generateAccessRefreshToken(
     user?._id
@@ -154,6 +195,7 @@ export const resetPassword = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "password changed successfully"));
 });
 
+// Update User Details
 export const updateUserDetails = asyncHandler(async (req, res) => {
   const { name, email, username } = req.body;
   const existingUser = await User.findOne({

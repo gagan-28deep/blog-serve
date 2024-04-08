@@ -4,6 +4,7 @@ import {
   getCurrentUser,
   login,
   logout,
+  refreshAccessToken,
   resetPassword,
   signUp,
   updateUserDetails,
@@ -17,6 +18,7 @@ const router = express.Router();
 router.route("/signup").post(upload.single("profileImage"), signUp);
 router.route("/login").post(login);
 router.route("/getallUsers").get(getAllUsers)
+router.route("/refresh-token").post(refreshAccessToken)
 
 // Secured routes
 router.route("/logout").post(verifyJwt, logout);

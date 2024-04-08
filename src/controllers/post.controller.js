@@ -21,7 +21,14 @@ export const createPost = asyncHandler(async (req, res) => {
   });
 
   if (!post) {
-    throw new ApiError(500, "Something went wrong while creating a post");
+    // throw new ApiError(500, "Something went wrong while creating a post");
+    const error = new ApiError(500 , "Something went wrong while creating a post")
+    return res.status(error.statusCode).json({
+      statusCode: error.statusCode,
+      success: false,
+      message: error.message,
+      errors: error.errors,
+    });
   }
   return res
     .status(200)
@@ -32,7 +39,24 @@ export const createPost = asyncHandler(async (req, res) => {
 export const getPostById = asyncHandler(async (req, res) => {
   const { id } = req.params;
   if (!id) {
-    throw new ApiError(400, "Post Id is missing");
+    // throw new ApiError(400, "Post Id is missing");
+    const error = new ApiError(400 , "Post Id is missing")
+    return res.status(error.statusCode).json({
+      statusCode: error.statusCode,
+      success: false,
+      message: error.message,
+      errors: error.errors,
+    });
+  }
+  const postCheck = await Post.findById(id)
+  if(!postCheck){
+    const error = new ApiError(400 , "No Post Found")
+    return res.status(error.statusCode).json({
+      statusCode: error.statusCode,
+      success: false,
+      message: error.message,
+      errors: error.errors,
+    });
   }
   const post = await Post.aggregate([
     {
@@ -83,9 +107,6 @@ export const getPostById = asyncHandler(async (req, res) => {
       },
     },
   ]);
-  if (post.length === 0) {
-    throw new ApiError(400, "No Post Found");
-  }
   return res
     .status(200)
     .json(new ApiResponse(200, post[0], "Post Fetched Successfully"));
@@ -112,7 +133,14 @@ export const getAllPosts = asyncHandler(async (req, res) => {
     },
   ]);
   if (!allPosts || allPosts?.length === 0) {
-    throw new ApiError(400, "No Posts found");
+    // throw new ApiError(400, "No Posts found");
+    const error = new ApiError(400 , "No Posts found")
+    return res.status(error.statusCode).json({
+      statusCode: error.statusCode,
+      success: false,
+      message: error.message,
+      errors: error.errors,
+    });
   }
   return res
     .status(200)
@@ -124,11 +152,25 @@ export const deletePostById = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const post = await Post.findById(id);
   if (!post) {
-    throw new ApiError(400, "No Post Found");
+    // throw new ApiError(400, "No Post Found");
+    const error = new ApiError(400 , "No Post Found")
+    return res.status(error.statusCode).json({
+      statusCode: error.statusCode,
+      success: false,
+      message: error.message,
+      errors: error.errors,
+    });
   }
   const isEqual = post?.username.toString() === req?.user?._id.toString();
   if (isEqual === false) {
-    throw new ApiError(401, "You cannot delete this post");
+    // throw new ApiError(401, "You cannot delete this post");
+    const error = new ApiError(401 , "You cannot delete this post")
+    return res.status(error.statusCode).json({
+      statusCode: error.statusCode,
+      success: false,
+      message: error.message,
+      errors: error.errors,
+    });
   }
   const deletedPost = await Post.findByIdAndDelete(id);
   return res
@@ -141,19 +183,47 @@ export const updatePostImage = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const post = await Post.findById(id);
   if (!post) {
-    throw new ApiError(400, "No Post Found");
+    // throw new ApiError(400, "No Post Found");
+    const error = new ApiError(400 , "No Post Found")
+    return res.status(error.statusCode).json({
+      statusCode: error.statusCode,
+      success: false,
+      message: error.message,
+      errors: error.errors,
+    });
   }
   const isEqual = post?.username.toString() === req?.user?._id.toString();
   if (isEqual === false) {
-    throw new ApiError(401, "You cannot update this post");
+    // throw new ApiError(401, "You cannot update this post");
+    const error = new ApiError(401 , "You cannot update this post")
+    return res.status(error.statusCode).json({
+      statusCode: error.statusCode,
+      success: false,
+      message: error.message,
+      errors: error.errors,
+    });
   }
   const postImageLocalPath = req?.file?.path;
   if (!postImageLocalPath) {
-    throw new ApiError(400, "Post File is Required");
+    // throw new ApiError(400, "Post File is Required");
+    const error = new ApiError(400 , "Post File is Missing")
+    return res.status(error.statusCode).json({
+      statusCode: error.statusCode,
+      success: false,
+      message: error.message,
+      errors: error.errors,
+    });
   }
   const postImage = await uploadOnCloudinary(postImageLocalPath);
   if (!postImage) {
-    throw new ApiError(500, "Error while uploading profile image");
+    // throw new ApiError(500, "Error while uploading post image");
+    const error = new ApiError(500 , "Error while uploading post image")
+    return res.status(error.statusCode).json({
+      statusCode: error.statusCode,
+      success: false,
+      message: error.message,
+      errors: error.errors,
+    });
   }
   const updatePost = await Post.findByIdAndUpdate(
     id,
@@ -170,11 +240,25 @@ export const updatePost = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const post = await Post.findById(id);
   if (!post) {
-    throw new ApiError(400, "No Post Found");
+    // throw new ApiError(400, "No Post Found");
+    const error = new ApiError(400 , "No Post Found")
+    return res.status(error.statusCode).json({
+      statusCode: error.statusCode,
+      success: false,
+      message: error.message,
+      errors: error.errors,
+    });
   }
   const isEqual = post?.username.toString() === req?.user?._id.toString();
   if (isEqual === false) {
-    throw new ApiError(401, "You cannot update this post");
+    // throw new ApiError(401, "You cannot update this post");
+    const error = new ApiError(401 , "You cannot update this post")
+    return res.status(error.statusCode).json({
+      statusCode: error.statusCode,
+      success: false,
+      message: error.message,
+      errors: error.errors,
+    });
   }
   const { title, description } = req.body;
 

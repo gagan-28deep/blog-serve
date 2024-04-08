@@ -20,11 +20,18 @@ const generateAccessRefreshToken = async (userId) => {
     await user.save();
 
     return { accessToken, refreshToken };
-  } catch (error) {
-    throw new ApiError(
-      400,
-      "Something went wrong while generating access and refresh token"
-    );
+  } catch (err) {
+    // throw new ApiError(
+    //   400,
+    //   "Something went wrong while generating access and refresh token"
+    // );
+    const error = new ApiError(400 , "Something went wrong while generating access and refresh token")
+    return res.status(error?.statusCode).json({
+      statusCode: error.statusCode,
+      success: false,
+      message: error.message,
+      errors: error.errors,
+    });
   }
 };
 
@@ -177,16 +184,37 @@ export const resetPassword = asyncHandler(async (req, res) => {
   const { oldPassword, newPassword, confirmPassword } = req.body;
 
   if (!oldPassword || !newPassword || !confirmPassword) {
-    throw new ApiError(400, "All fields are required");
+    // throw new ApiError(400, "All fields are required");
+    const error = new ApiError(400 , "All fields are required")
+    return res.status(error.statusCode).json({
+      statusCode: error.statusCode,
+      success: false,
+      message: error.message,
+      errors: error.errors,
+    });
   }
   const user = await User.findById(req.user?._id);
 
   const isOldPasswordCorrect = await user?.isPasswordSame(oldPassword);
   if (!isOldPasswordCorrect) {
-    throw new ApiError(400, "Invalid Old Password");
+    // throw new ApiError(400, "Invalid Old Password");
+    const error = new ApiError(400 , "Invalid Old Password")
+    return res.status(error.statusCode).json({
+      statusCode: error.statusCode,
+      success: false,
+      message: error.message,
+      errors: error.errors,
+    });
   }
   if (newPassword !== confirmPassword) {
-    throw new ApiError(400, "Password does not match");
+    // throw new ApiError(400, "Password does not match");
+    const error = new ApiError(400 , "Password does not match")
+    return res.status(error.statusCode).json({
+      statusCode: error.statusCode,
+      success: false,
+      message: error.message,
+      errors: error.errors,
+    });
   }
   user.password = newPassword;
   await user.save();
@@ -203,7 +231,14 @@ export const updateUserDetails = asyncHandler(async (req, res) => {
   });
 
   if (existingUser && existingUser._id.toString() !== req.user._id.toString()) {
-    throw new ApiError(400, "User with same username or email is present");
+    // throw new ApiError(400, "User with same username or email is present");
+    const error = new ApiError(400 , "User with same username or email is present")
+    return res.status(error.statusCode).json({
+      statusCode: error.statusCode,
+      success: false,
+      message: error.message,
+      errors: error.errors,
+    });
   }
 
   const updateFields = {};
@@ -237,12 +272,26 @@ export const updateUserProfileImage = asyncHandler(async (req, res) => {
   const profileImageLocalPath = req.file?.path;
 
   if (!profileImageLocalPath) {
-    throw new ApiError(400, "profile image file is missing");
+    // throw new ApiError(400, "profile image file is missing");
+    const error = new ApiError(400 , "profile image file is missing")
+    return res.status(error.statusCode).json({
+      statusCode: error.statusCode,
+      success: false,
+      message: error.message,
+      errors: error.errors,
+    });
   }
 
   const profileImage = await uploadOnCloudinary(profileImageLocalPath);
   if (!profileImage?.url) {
-    throw new ApiError(400, "Error while uploading avatar");
+    // throw new ApiError(400, "Error while uploading avatar");
+    const error = new ApiError(500 , "Error while uploading avatar")
+    return res.status(error.statusCode).json({
+      statusCode: error.statusCode,
+      success: false,
+      message: error.message,
+      errors: error.errors,
+    });
   }
   const user = await User.findByIdAndUpdate(
     req.user?._id,
@@ -275,6 +324,69 @@ export const getAllUsers = asyncHandler(async (req, res) => {
 
 
 // Generate Refresh Token
+
+export const refreshAccessToken = asyncHandler(async (req, res) => {
+  const incomingRefreshToken =
+    req.cookies?.refreshToken || req.body?.refreshToken;
+
+  if (!incomingRefreshToken) {
+    // throw new ApiError(401, "Unauthorized request");
+    const error = new ApiError(401, "Unauthorized request");
+    return res.status(error?.statusCode).json({
+      statusCode: error?.statusCode,
+      message: error?.message,
+    });
+  }
+  try {
+    const decodedToken = await jwt.verify(
+      incomingRefreshToken,
+      process.env.REFRESH_TOEKN_SECRET
+    );
+
+    const user = await User.findById(decodedToken?._id);
+    if (!user) {
+      // throw new ApiError(401, "Invalid Token");
+      const error = new ApiError(401, "Invalid Token");
+      return res.status(error?.statusCode).json({
+        statusCode: error?.statusCode,
+        message: error?.message,
+      });
+    }
+
+    if (incomingRefreshToken !== user?.refreshToken) {
+      // throw new ApiError(401, "Refresh Token is expired or used");
+      const error = new ApiError(401, "Refresh Token is expired or used");
+      return res.status(error?.statusCode).json({
+        statusCode: error?.statusCode,
+        message: error?.message,
+      });
+    }
+
+    const { accessToken, newRefreshToken } = await generateAccessRefreshToken(
+      user?._id
+    );
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", newRefreshToken, options)
+      .json(
+        new ApiResponse(
+          200,
+          {
+            accessToken,
+            refreshToken: newRefreshToken,
+          },
+          "Access Token Refreshed Successfully"
+        )
+      );
+  } catch (error) {
+    throw ApiError(401, error?.message || "Invalid Refresh Token");
+  }
+});
 
 // Delete a User?
 
